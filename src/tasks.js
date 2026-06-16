@@ -6,8 +6,27 @@ const PRIORITIES = { high: 1, medium: 2, low: 3 };
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
+// Security fix: the previous implementation used `Math.max(...tasks.map(…))`
+// which spreads the entire tasks array as individual function arguments.
+// JavaScript engines cap the number of arguments per call (V8 caps at ~65,535),
+// so a tampered data file with a large number of entries throws a
+// "RangeError: too many arguments" / stack overflow, crashing the process —
+// a Denial of Service vulnerability.  Using Array.prototype.reduce iterates
+// over the array without spreading it onto the call stack, making this safe
+// regardless of how many tasks the store contains.
+//
+// Additionally, we now guard against non-safe-integer IDs (e.g. values beyond
+// Number.MAX_SAFE_INTEGER injected via a crafted data file) that could silently
+// produce duplicate IDs due to floating-point precision loss.
 function nextId(tasks) {
-  return tasks.length === 0 ? 1 : Math.max(...tasks.map(t => t.id)) + 1;
+  if (tasks.length === 0) return 1;
+  const maxId = tasks.reduce((max, t) => {
+    const id = t.id;
+    // Skip IDs that are not positive safe integers to avoid precision issues
+    if (typeof id !== 'number' || !Number.isSafeInteger(id) || id < 1) return max;
+    return id > max ? id : max;
+  }, 0);
+  return maxId + 1;
 }
 
 function todayStr() {
