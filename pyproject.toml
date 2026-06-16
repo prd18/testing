@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "task-manager-cli"
+version = "0.1.0"
+description = "A simple command-line task manager with priorities and due dates"
+requires-python = ">=3.9"
+
+[project.scripts]
+task = "task_manager:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
